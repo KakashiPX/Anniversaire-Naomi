@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Joyeux Anniversaire Mon Amour</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&family=Caveat:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'pastel-pink': '#ffe4e6',
+                        'pastel-rose': '#fecdd3',
+                        'love-red': '#e11d48',
+                        'dark-rose': '#881337',
+                    },
+                    fontFamily: {
+                        'title': ['"Playfair Display"', 'serif'],
+                        'body': ['"Inter"', 'sans-serif'],
+                        'handwriting': ['"Caveat"', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            overflow-x: hidden;
+            background-color: #fff0f2;
+            -webkit-font-smoothing: antialiased;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .heart-particle {
+            position: fixed;
+            bottom: -10vh;
+            color: #e11d48;
+            font-size: 2rem;
+            z-index: 100;
+            pointer-events: none;
+            will-change: transform, opacity;
+            animation: floatUp ease-in forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translate3d(0, 0, 0) scale(0.5) rotate(0deg); opacity: 1; }
+            100% { transform: translate3d(0, -120vh, 0) scale(1.5) rotate(45deg); opacity: 0; }
+        }
+
+        .scroll-element {
+            will-change: transform, opacity;
+        }
+
+        .slide-hidden-left {
+            opacity: 0;
+            transform: translate3d(-100px, 0, 0) rotate(-10deg);
+            transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        
+        .slide-hidden-right {
+            opacity: 0;
+            transform: translate3d(100px, 0, 0) rotate(10deg);
+            transition: opacity 1s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .slide-visible {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) rotate(var(--target-rotation));
+        }
+
+        .polaroid {
+            background: white;
+            padding: 16px 16px 64px 16px;
+            position: relative;
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            user-select: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0,0,0,0.05);
+        }
+        
+        .polaroid:hover, .polaroid:active {
+            transform: scale(1.03) rotate(0deg) !important;
+            z-index: 20;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .locked-blur {
+            filter: blur(5px);
+            user-select: none;
+        }
+
+        .btn-discover {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .btn-discover.hidden-anim {
+            opacity: 0;
+            transform: scale(0.8);
+            pointer-events: none;
+        }
+        .clue-content {
+            transition: opacity 0.5s ease;
+            opacity: 0;
+            display: none;
+        }
+        .clue-content.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Styles pour les mini-jeux */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        .modal.active { display: flex; }
+        
+        .tab-btn.active {
+            background-color: #e11d48;
+            color: white;
+            border-color: #e11d48;
+        }
+
+        /* Puzzle */
+        #puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2px;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1;
+            margin: 0 auto;
+            border: 2px solid #e11d48;
+            background: #fff;
+        }
+        .puzzle-piece {
+            background-size: 400% 400%;
+            cursor: pointer;
+            transition: transform 0.2s, border 0.2s;
+        }
+        .puzzle-piece.selected {
+            border: 3px solid #e11d48;
+            transform: scale(0.9);
+        }
+
+        /* Memory */
+        #memory-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .memory-card {
+            aspect-ratio: 1;
+            background: #fecdd3;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            padding: 5px;
+            word-break: break-word;
+        }
+        .memory-card.flipped {
+            background: white;
+            color: #881337;
+            border: 2px solid #e11d48;
+        }
+        .memory-card.matched {
+            background: #e11d48;
+            color: white;
+            opacity: 0.8;
+            cursor: default;
+        }
+
+        /* Mots Mêlés */
+        #wordsearch-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            #wordsearch-container { flex-direction: row; align-items: flex-start; justify-content: center; }
+        }
+        #wordsearch-grid {
+            display: grid;
+            grid-template-columns: repeat(20, 1fr);
+            gap: 1px;
+            background: #fecdd3;
+            padding: 2px;
+            border-radius: 5px;
+            user-select: none;
+            touch-action: none;
+            width: fit-content;
+            margin: 0 auto;
+        }
+        .ws-cell {
+            background: white;
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        @media (min-width: 768px) {
+            .ws-cell { width: 28px; height: 28px; font-size: 0.9rem; }
+        }
+        .ws-cell.highlight {
+            background: #fecdd3;
+            color: #881337;
+        }
+        .ws-cell.found {
+            background: #e11d48;
+            color: white;
+        }
+    </style>
+</head>
+<body class="font-body text-gray-800 selection:bg-pastel-rose selection:text-dark-rose">
+
+    <!-- ÉCRAN D'ACCUEIL -->
+    <section id="home-screen" class="min-h-[100dvh] flex flex-col items-center justify-center relative p-8 md:p-12 bg-gradient-to-br from-pastel-pink to-white overflow-hidden">
+        <div class="absolute top-12 left-12 text-pastel-rose text-7xl md:text-8xl opacity-40 transform -rotate-12"><i class="fas fa-heart"></i></div>
+        <div class="absolute bottom-24 right-12 text-pastel-rose text-8xl md:text-9xl opacity-40 transform rotate-12"><i class="fas fa-heart"></i></div>
+        
+        <div class="z-10 text-center max-w-3xl bg-white/50 backdrop-blur-md p-10 md:p-16 rounded-[2rem] shadow-2xl border border-white/70">
+            <h1 class="font-title text-5xl md:text-7xl lg:text-8xl font-bold text-dark-rose mb-6 leading-tight">
+                Ton anniversaire <br>
+                <span class="text-love-red font-handwriting text-6xl md:text-8xl lg:text-9xl font-normal block mt-4">Approche...</span>
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-700 mb-12 font-light px-4">
+                Je t'ai préparé une petite surprise pour te faire patienter. Un voyage dans nos souvenirs avant le grand jour...
+            </p>
+            <button id="start-btn" class="bg-love-red hover:bg-rose-700 text-white font-medium text-2xl px-12 py-6 rounded-full transition-all duration-300 transform active:scale-95 shadow-[0_15px_30px_rgba(225,29,72,0.3)] touch-manipulation">
+                Commencer l'aventure <i class="fas fa-heart ml-3"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- CONTENU PRINCIPAL -->
+    <main id="main-content" class="hidden">
+        
+        <!-- SECTION SOUVENIRS -->
+        <section id="souvenirs" class="py-24 md:py-32 bg-transparent">
+            <div class="max-w-5xl lg:max-w-6xl mx-auto px-8 md:px-12">
+                <div class="text-center mb-24">
+                    <h2 class="font-title text-5xl md:text-6xl text-dark-rose mb-6">Nos Souvenirs</h2>
+                    <p class="font-handwriting text-3xl md:text-4xl text-gray-600">Tous les moments passés ensemble...</p>
+                    <div class="h-1.5 w-32 bg-love-red mx-auto rounded-full mt-8 opacity-70"></div>
+                </div>
+
+                <div class="space-y-40 md:space-y-48">
+                    <!-- Souvenir 1 -->
+                    <div class="flex flex-col md:flex-row items-center gap-12 md:gap-20 scroll-element slide-hidden-left" style="--target-rotation: -4deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-end">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/maeva.png" alt="Souvenir 1" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Notre rencontre</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-left px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Là où tout a commencé</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Juste après le Stade de France, je suis aller à l'anniversaire de Maeva et je t'ai rencontré. Je ne savais pas encore que ce jour-là allait changer beaucoup de choses. J'étais obligé de t'envoyer un message après avoir rigoler avec toi toute la soirée.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 2 -->
+                    <div class="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20 scroll-element slide-hidden-right" style="--target-rotation: 5deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-start">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/fete_musique.jpg" alt="Souvenir 2" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Fête de la musique</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-right px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Nos petites sorties</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Après s'être parler on a commencer à sortir et le feeling passer super bien. Ce soir là on a rigoler, danser et chanter comme des fous. C'était le début d'une belle histoire.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 3 -->
+                    <div class="flex flex-col md:flex-row items-center gap-12 md:gap-20 scroll-element slide-hidden-left" style="--target-rotation: -2deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-end">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/vermelles_musique.PNG" alt="Souvenir 3" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Fête à Vermelles</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-left px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Le début des vacances</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Et ensuite sont arrivés les vacances, plus de cours, plus d'examens on pouvait enfin sortir et profiter. Ce soir là ta recontrer les mongoles avec qui j'étais potes depuis 4ans déja. 
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 4 -->
+                    <div class="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20 scroll-element slide-hidden-right" style="--target-rotation: 4deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-start">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/terril.JPG" alt="Souvenir 4" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Feu d'artifice</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-right px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Les premiers rapprochement</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Ce soir là, ce n'étais même pas prévu mais on a fini par se retrouver sur un terril pour regarder un feu d'artifice. C'était un moment magique, on a pu se rapprocher et s'aimer encore un peu plus.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 5 -->
+                    <div class="flex flex-col md:flex-row items-center gap-12 md:gap-20 scroll-element slide-hidden-left" style="--target-rotation: -5deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-end">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/plage.JPG" alt="Souvenir 5" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Notre amour</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-left px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Le début de notre relation</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Et puis un jour, on est parti à Nausicaa pour ensuite regarder un spectacle sur la plage. On était un peu stréssé mais on a fini par s'embrasser et c'était le début de notre belle histoire d'amour. Depuis ce jour là, je ne peux plus me passer de toi.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 6 -->
+                    <div class="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20 scroll-element slide-hidden-right" style="--target-rotation: 3deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-start">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/badass.jpg" alt="Souvenir 6" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Ta douceur</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-right px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Ma safe place</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Tes câlins qui soignent tout, ta façon de me rassurer et de prendre soin de moi. Maintenant on fait toutes nos activités ensemble, on se complète et on se comprend. Je t'aime plus que tout.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 7 -->
+                    <div class="flex flex-col md:flex-row items-center gap-12 md:gap-20 scroll-element slide-hidden-left" style="--target-rotation: -3deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-end">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/dodo1.JPG" alt="Souvenir 7" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Rompich</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-left px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Nos petites soirées à deux</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Après les cours on trouve toujours le moyen de se retrouver pour passer du temps ensemble. Pour regarder un film (des fois), jouer à des jeux ou juste se faire des calins, chaque moment avec toi sont pour moi incroyable.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Souvenir 8 -->
+                    <div class="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-20 scroll-element slide-hidden-right" style="--target-rotation: 6deg;">
+                        <div class="w-full md:w-1/2 flex justify-center md:justify-start">
+                            <div class="polaroid w-80 md:w-96 max-w-full">
+                                <img src="img/dodo2.JPG" alt="Souvenir 8" class="w-full h-auto object-cover border border-gray-100 rounded-sm pointer-events-none">
+                                <p class="font-handwriting text-center text-3xl md:text-4xl text-gray-800 absolute bottom-5 w-full left-0">Tu dors Beaucoup</p>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-1/2 text-center md:text-right px-4">
+                            <h3 class="font-title text-4xl text-dark-rose mb-6">Ton radiateur préféré</h3>
+                            <p class="text-xl md:text-2xl text-gray-600 leading-relaxed font-light">
+                                Tu dors beaucoup, mais au moins t'es au chaud et ya aucune arraignée pour venir te manger quand je suis là. Je t'aime mon amour, je ne veux jamais te perdre. Merci pour tout ce que tu fais pour moi.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION ÉNIGMES / CADEAU -->
+        <section id="enigmes" class="py-24 md:py-32 bg-white rounded-t-[4rem] shadow-[0_-10px_40px_rgba(0,0,0,0.03)] pb-40">
+            <div class="max-w-4xl lg:max-w-5xl mx-auto px-8">
+                
+                <div class="text-center mb-16">
+                    <button onclick="openGamesModal()" class="bg-gradient-to-r from-love-red to-rose-500 hover:from-rose-600 hover:to-rose-400 text-white font-medium text-xl md:text-2xl px-10 py-5 rounded-full transition-all duration-300 transform hover:scale-105 shadow-[0_10px_25px_rgba(225,29,72,0.4)] mb-8">
+                        <i class="fas fa-gamepad mr-3"></i> Mini-jeux pour patienter
+                    </button>
+                </div>
+
+                <div class="text-center mb-20">
+                    <h2 class="font-title text-5xl md:text-6xl text-dark-rose mb-6">
+                        Cadeau d'anniversaire <i class="fas fa-lock text-4xl text-gray-300 ml-3 align-middle"></i>
+                    </h2>
+                    <p class="text-xl md:text-2xl text-gray-600 mt-6 max-w-3xl mx-auto font-light leading-relaxed">
+                        Ton cadeau est un secret bien gardé... Un indice se débloque chaque jour jusqu'à la révélation finale samedi !
+                    </p>
+                </div>
+
+                <div id="clues-container" class="space-y-8 md:space-y-10">
+                    <!-- JS populate -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL MINI-JEUX -->
+    <div id="games-modal" class="modal items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-5xl h-[85vh] flex flex-col shadow-2xl overflow-hidden relative">
+            
+            <button onclick="closeGamesModal()" class="absolute top-4 right-4 z-50 bg-gray-100 hover:bg-gray-200 text-gray-600 w-12 h-12 rounded-full flex items-center justify-center text-xl transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="bg-pastel-pink p-6 text-center border-b border-rose-200 flex-shrink-0">
+                <h3 class="font-title text-3xl md:text-4xl text-dark-rose">Jeux</h3>
+            </div>
+
+            <!-- Onglets -->
+            <div class="flex flex-wrap border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                <button onclick="switchTab('puzzle')" id="tab-puzzle" class="tab-btn active flex-1 py-4 px-2 text-sm md:text-base font-medium border-b-2 border-transparent text-gray-600 hover:text-love-red">🧩 Puzzle</button>
+                <button onclick="switchTab('memory')" id="tab-memory" class="tab-btn flex-1 py-4 px-2 text-sm md:text-base font-medium border-b-2 border-transparent text-gray-600 hover:text-love-red">🎴 Memory</button>
+                <button onclick="switchTab('wordsearch')" id="tab-wordsearch" class="tab-btn flex-1 py-4 px-2 text-sm md:text-base font-medium border-b-2 border-transparent text-gray-600 hover:text-love-red">🔠 Mots Mêlés</button>
+                <button onclick="switchTab('quiz')" id="tab-quiz" class="tab-btn flex-1 py-4 px-2 text-sm md:text-base font-medium border-b-2 border-transparent text-gray-600 hover:text-love-red">❤️ Qui de nous 2</button>
+            </div>
+
+            <!-- Contenu des jeux -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50">
+                
+                <!-- JEU 1: PUZZLE -->
+                <div id="game-puzzle" class="game-container text-center h-full flex flex-col items-center">
+                    <p class="text-gray-600 mb-6 text-lg">Touche deux pièces pour les échanger et reconstituer notre photo !</p>
+                    <div id="puzzle-grid"></div>
+                    <button onclick="initPuzzle()" class="mt-6 text-love-red underline font-medium">Mélanger à nouveau</button>
+                </div>
+
+                <!-- JEU 2: MEMORY -->
+                <div id="game-memory" class="game-container hidden text-center">
+                    <p class="text-gray-600 mb-6 text-lg">Trouve les paires !</p>
+                    <div id="memory-grid"></div>
+                </div>
+
+                <!-- JEU 3: MOTS MÊLÉS -->
+                <div id="game-wordsearch" class="game-container hidden h-full relative pb-16">
+                    <div id="wordsearch-container">
+                        <!-- Grille -->
+                        <div class="flex-1 flex justify-center items-center">
+                            <div id="wordsearch-grid"></div>
+                        </div>
+                        
+                        <!-- Liste des mots sur le côté/en bas -->
+                        <div class="w-full md:w-64 bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+                            <h4 class="font-title text-xl text-dark-rose mb-4 border-b pb-2">Mots à trouver :</h4>
+                            <ul id="ws-word-list" class="space-y-3 font-medium text-sm md:text-base">
+                                <!-- JS populate -->
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Message de victoire / statut -->
+                    <p id="ws-status" class="absolute bottom-2 left-0 right-0 text-center text-love-red font-bold text-xl"></p>
+                </div>
+
+                <!-- JEU 4: QUI DE NOUS DEUX -->
+                <div id="game-quiz" class="game-container hidden text-center h-full flex flex-col items-center justify-center">
+                    <div id="quiz-content" class="w-full max-w-lg">
+                        <h4 id="quiz-question" class="text-2xl md:text-3xl font-title text-dark-rose mb-8 h-24 flex items-center justify-center"></h4>
+                        <div class="flex gap-4 justify-center">
+                            <button onclick="checkQuizAnswer('Naomi')" class="flex-1 py-6 bg-pastel-rose hover:bg-rose-300 text-dark-rose font-bold text-2xl rounded-2xl transition-transform active:scale-95 shadow-md">Naomi</button>
+                            <button onclick="checkQuizAnswer('Maxence')" class="flex-1 py-6 bg-blue-100 hover:bg-blue-200 text-blue-900 font-bold text-2xl rounded-2xl transition-transform active:scale-95 shadow-md">Maxence</button>
+                        </div>
+                        <p id="quiz-feedback" class="mt-8 text-xl font-bold h-8"></p>
+                    </div>
+                    <div id="quiz-end" class="hidden w-full max-w-lg">
+                        <h4 class="text-3xl font-title text-dark-rose mb-4">Bravo ! 🎉</h4>
+                        <p class="text-xl text-gray-600 mb-8">Tu nous connais par cœur mon amour.</p>
+                        <button onclick="initQuiz()" class="bg-love-red text-white px-8 py-3 rounded-full text-xl">Rejouer</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* === TRANSITION ACCUEIL === */
+        document.getElementById('start-btn').addEventListener('click', () => {
+            const fragment = document.createDocumentFragment();
+            for(let i = 0; i < 40; i++) {
+                setTimeout(() => {
+                    const heart = document.createElement('i');
+                    heart.className = 'fas fa-heart heart-particle';
+                    heart.style.left = (Math.random() * 100) + 'vw';
+                    heart.style.fontSize = (Math.random() * 2.5 + 1.5) + 'rem';
+                    heart.style.animationDuration = (Math.random() * 1.5 + 1.5) + 's';
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 3000);
+                }, i * 40);
+            }
+            setTimeout(() => {
+                document.getElementById('home-screen').style.display = 'none';
+                document.getElementById('main-content').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'instant' });
+            }, 800);
+        });
+
+        /* === ANIMATION SCROLL === */
+        const observer = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    requestAnimationFrame(() => entry.target.classList.add('slide-visible'));
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { rootMargin: '0px 0px -10% 0px', threshold: 0.15 });
+        document.querySelectorAll('.scroll-element').forEach(el => observer.observe(el));
+
+        /* === GESTION DES INDICES === */
+        const cluesData = [
+            {
+                date: '2026-10-13',
+                dayLabel: 'Mardi 13 Octobre',
+                title: 'Indice n°1',
+                text: "Un petit bain chaud sa fait pas de mal devant un bon film, surtout quand on est deux !",
+                icon: 'fa-map'
+            },
+            {
+                date: '2026-10-14',
+                dayLabel: 'Mercredi 14 Octobre',
+                title: 'Indice n°2',
+                text: "C'est une ville dans le nord où on mange TRÈS TRÈS bien (Toi qui le dit)",
+                icon: 'fa-water'
+            },
+            {
+                date: '2026-10-15',
+                dayLabel: 'Jeudi 15 Octobre',
+                title: 'Indice n°3',
+                text: "Une bonne nuit dans lit douillet pour aller voir des tigres et des girafes, c'est pas mal non plus !",
+                icon: 'fa-hot-tub'
+            },
+            {
+                date: '2026-10-16',
+                dayLabel: 'Vendredi 16 Octobre',
+                title: 'Indice n°4',
+                text: "3 jours 2 nuits de tranquillité ",
+                icon: 'fa-film'
+            },
+            {
+                date: '2026-10-17',
+                dayLabel: 'Samedi 17 Octobre',
+                title: '🎉 LE GRAND JOUR 🎉',
+                text: "SURPRISE ! On part en week-end à Amiens ! On a un appartement privée avec Jacuzzi et salle de cinéma. Prépare ton 26-27-28 mon coeur ! ❤️",
+                icon: 'fa-gift',
+                isFinal: true
+            }
+        ];
+
+        function renderClues() {
+            const container = document.getElementById('clues-container');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            cluesData.forEach((clue, index) => {
+                const clueDate = new Date(clue.date);
+                clueDate.setHours(0,0,0,0);
+                const isUnlocked = today >= clueDate;
+                
+                const card = document.createElement('div');
+                card.className = `clue-card rounded-[1.5rem] p-6 md:p-8 border-l-8 shadow-sm flex flex-col md:flex-row items-center md:items-stretch gap-6 transition-transform duration-300
+                    ${isUnlocked ? (clue.isFinal ? 'bg-gradient-to-r from-pastel-pink to-white border-love-red shadow-lg' : 'bg-white border-pastel-rose shadow-md') : 'bg-gray-50/80 border-gray-300'}`;
+                
+                const dateBox = document.createElement('div');
+                dateBox.className = `w-full md:w-48 text-center p-4 rounded-2xl flex flex-col justify-center items-center font-medium ${isUnlocked ? 'bg-pastel-pink text-dark-rose' : 'bg-gray-200 text-gray-500'}`;
+                dateBox.innerHTML = `<span class="block text-base md:text-lg opacity-80 uppercase tracking-wider">${clue.dayLabel.split(' ')[0]}</span>
+                                     <span class="block text-2xl md:text-3xl font-bold mt-1">${clue.dayLabel.split(' ')[1]} ${clue.dayLabel.split(' ')[2]}</span>`;
+
+                const contentBox = document.createElement('div');
+                contentBox.className = "flex-1 w-full text-center md:text-left flex flex-col justify-center relative";
+                
+                if (isUnlocked) {
+                    contentBox.innerHTML = `
+                        <button id="btn-reveal-${index}" onclick="revealClue(${index}, ${clue.isFinal})" class="btn-discover w-full py-6 bg-love-red text-white text-2xl font-bold rounded-2xl shadow-lg hover:bg-rose-700 active:scale-95">
+                            🎁 Découvrir l'indice
+                        </button>
+                        <div id="content-reveal-${index}" class="clue-content">
+                            <h4 class="font-title text-3xl md:text-4xl text-dark-rose mb-3">
+                                <i class="fas ${clue.icon} text-love-red mr-3 opacity-90"></i> ${clue.title}
+                            </h4>
+                            <p class="text-xl text-gray-700 leading-relaxed font-light ${clue.isFinal ? 'font-medium text-2xl text-love-red mt-4' : ''}">${clue.text}</p>
+                        </div>
+                    `;
+                } else {
+                    contentBox.innerHTML = `
+                        <div class="flex items-center justify-center md:justify-start gap-4 text-gray-400 mb-2">
+                            <i class="fas fa-lock text-3xl md:text-4xl"></i>
+                            <h4 class="font-title text-3xl">Indice verrouillé</h4>
+                        </div>
+                        <p class="text-lg md:text-xl text-gray-500 mt-2 italic locked-blur">Le contenu de cet indice est un secret.</p>
+                    `;
+                }
+
+                card.appendChild(dateBox);
+                card.appendChild(contentBox);
+                container.appendChild(card);
+            });
+        }
+
+        window.revealClue = function(index, isFinal) {
+            const btn = document.getElementById(`btn-reveal-${index}`);
+            const content = document.getElementById(`content-reveal-${index}`);
+            btn.classList.add('hidden-anim');
+            setTimeout(() => {
+                btn.style.display = 'none';
+                content.classList.add('visible');
+                if(isFinal) fireConfetti();
+            }, 500);
+        }
+
+        function fireConfetti() {
+            var duration = 4000;
+            var end = Date.now() + duration;
+            var defaults = { startVelocity: 45, spread: 360, ticks: 100, zIndex: 100 };
+            var interval = setInterval(function() {
+                if (Date.now() > end) return clearInterval(interval);
+                confetti(Object.assign({}, defaults, { particleCount: 50, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+
+        /* === GESTION MODALE MINI-JEUX === */
+        window.openGamesModal = function() { document.getElementById('games-modal').classList.add('active'); }
+        window.closeGamesModal = function() { document.getElementById('games-modal').classList.remove('active'); }
+        
+        window.switchTab = function(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.game-container').forEach(c => c.classList.add('hidden'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.getElementById('game-' + tabName).classList.remove('hidden');
+        }
+
+        /* 1. PUZZLE (4x4) */
+        let selectedPiece = null;
+        function initPuzzle() {
+            const grid = document.getElementById('puzzle-grid');
+            grid.innerHTML = '';
+            let pieces = [];
+            for (let i = 0; i < 16; i++) pieces.push(i);
+            pieces.sort(() => Math.random() - 0.5);
+
+            pieces.forEach((num, index) => {
+                let div = document.createElement('div');
+                div.className = 'puzzle-piece';
+                div.style.backgroundImage = 'url("img/plage.JPG")';
+                div.style.backgroundPosition = `${(num % 4) * 33.33}% ${Math.floor(num / 4) * 33.33}%`;
+                div.dataset.correct = num;
+                div.dataset.current = index;
+                
+                div.onclick = () => {
+                    if(!selectedPiece) {
+                        selectedPiece = div;
+                        div.classList.add('selected');
+                    } else {
+                        let tempBg = selectedPiece.style.backgroundPosition;
+                        let tempCorrect = selectedPiece.dataset.correct;
+                        
+                        selectedPiece.style.backgroundPosition = div.style.backgroundPosition;
+                        selectedPiece.dataset.correct = div.dataset.correct;
+                        
+                        div.style.backgroundPosition = tempBg;
+                        div.dataset.correct = tempCorrect;
+                        
+                        selectedPiece.classList.remove('selected');
+                        selectedPiece = null;
+                        checkPuzzleWin();
+                    }
+                };
+                grid.appendChild(div);
+            });
+        }
+        function checkPuzzleWin() {
+            let win = true;
+            document.querySelectorAll('.puzzle-piece').forEach((p, i) => {
+                if(parseInt(p.dataset.correct) !== i) win = false;
+            });
+            if(win) setTimeout(() => { confetti(); alert('Puzzle réussi mon amour !'); }, 200);
+        }
+
+        /* 2. MEMORY AMOUREUX */
+        const memoryWords = ['Princesse', 'Ipad', 'Marie', 'Thomas', 'Kenzo', 'Maxence', 'Pepe crousty', 'Danse'];
+        let memoryCards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        
+        function initMemory() {
+            const grid = document.getElementById('memory-grid');
+            grid.innerHTML = '';
+            matchedPairs = 0;
+            let deck = [...memoryWords, ...memoryWords];
+            deck.sort(() => Math.random() - 0.5);
+
+            deck.forEach((word, i) => {
+                let card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.word = word;
+                card.dataset.index = i;
+                card.innerText = word;
+                
+                card.onclick = () => {
+                    if(flippedCards.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                        card.classList.add('flipped');
+                        flippedCards.push(card);
+                        if(flippedCards.length === 2) checkMemoryMatch();
+                    }
+                };
+                grid.appendChild(card);
+            });
+        }
+        function checkMemoryMatch() {
+            let [c1, c2] = flippedCards;
+            if(c1.dataset.word === c2.dataset.word) {
+                setTimeout(() => {
+                    c1.classList.add('matched'); c2.classList.add('matched');
+                    flippedCards = [];
+                    matchedPairs++;
+                    if(matchedPairs === memoryWords.length) setTimeout(() => confetti(), 300);
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    c1.classList.remove('flipped'); c2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        /* 3. MOTS MÊLÉS (AVEC LISTE CHECK/CROIX) */
+        const wsWords = ['PRINCESSE', 'IPAD', 'MARIE', 'THOMAS', 'KENZO', 'MAXENCE', 'PEPECROUSTY', 'DANSE', 'ARIANA', 'DESPERATEHOUSEWIVES'];
+        let wsGrid = [];
+        const WS_SIZE = 20;
+        let isSelecting = false;
+        let selectedCells = [];
+        let foundWordsCount = 0;
+
+        function initWordSearch() {
+            const gridEl = document.getElementById('wordsearch-grid');
+            const listEl = document.getElementById('ws-word-list');
+            gridEl.innerHTML = '';
+            listEl.innerHTML = '';
+            foundWordsCount = 0;
+            document.getElementById('ws-status').innerText = "";
+
+            wsGrid = Array(WS_SIZE).fill(null).map(() => Array(WS_SIZE).fill(''));
+            
+            // Générer la liste des mots sur le côté
+            wsWords.forEach(word => {
+                let li = document.createElement('li');
+                li.id = 'ws-word-' + word;
+                li.className = 'text-gray-600 flex items-center gap-3 transition-all duration-300';
+                li.innerHTML = `<i class="fas fa-times text-red-400 w-4 text-center"></i> <span>${word}</span>`;
+                listEl.appendChild(li);
+            });
+            
+            // Placer les mots aléatoirement
+            wsWords.forEach(word => {
+                let placed = false;
+                let attempts = 0;
+                while(!placed && attempts < 100) {
+                    let dir = Math.floor(Math.random() * 3); // 0:H, 1:V, 2:Diag
+                    let row = Math.floor(Math.random() * WS_SIZE);
+                    let col = Math.floor(Math.random() * WS_SIZE);
+                    
+                    if(canPlaceWord(word, row, col, dir)) {
+                        for(let i=0; i<word.length; i++) {
+                            if(dir===0) wsGrid[row][col+i] = word[i];
+                            if(dir===1) wsGrid[row+i][col] = word[i];
+                            if(dir===2) wsGrid[row+i][col+i] = word[i];
+                        }
+                        placed = true;
+                    }
+                    attempts++;
+                }
+            });
+
+            // Remplir le vide avec des lettres aléatoires
+            const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            for(let r=0; r<WS_SIZE; r++) {
+                for(let c=0; c<WS_SIZE; c++) {
+                    if(wsGrid[r][c] === '') wsGrid[r][c] = letters.charAt(Math.floor(Math.random() * letters.length));
+                    
+                    let cell = document.createElement('div');
+                    cell.className = 'ws-cell';
+                    cell.innerText = wsGrid[r][c];
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    
+                    // Gestion tactile/souris
+                    cell.addEventListener('mousedown', () => startWsSelect(cell));
+                    cell.addEventListener('mouseenter', () => enterWsSelect(cell));
+                    
+                    cell.addEventListener('touchstart', (e) => { e.preventDefault(); startWsSelect(cell); }, {passive: false});
+                    cell.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        let touch = e.touches[0];
+                        let target = document.elementFromPoint(touch.clientX, touch.clientY);
+                        if(target && target.classList.contains('ws-cell')) enterWsSelect(target);
+                    }, {passive: false});
+                    
+                    gridEl.appendChild(cell);
+                }
+            }
+            
+            document.addEventListener('mouseup', endWsSelect);
+            document.addEventListener('touchend', endWsSelect);
+        }
+
+        function canPlaceWord(word, r, c, dir) {
+            if(dir===0 && c + word.length > WS_SIZE) return false;
+            if(dir===1 && r + word.length > WS_SIZE) return false;
+            if(dir===2 && (r + word.length > WS_SIZE || c + word.length > WS_SIZE)) return false;
+            
+            for(let i=0; i<word.length; i++) {
+                let nr = dir===0 ? r : (dir===1 ? r+i : r+i);
+                let nc = dir===0 ? c+i : (dir===1 ? c : c+i);
+                if(wsGrid[nr][nc] !== '' && wsGrid[nr][nc] !== word[i]) return false;
+            }
+            return true;
+        }
+
+        function startWsSelect(cell) {
+            isSelecting = true;
+            selectedCells = [cell];
+            cell.classList.add('highlight');
+        }
+        function enterWsSelect(cell) {
+            if(isSelecting && !selectedCells.includes(cell)) {
+                selectedCells.push(cell);
+                cell.classList.add('highlight');
+            }
+        }
+        function endWsSelect() {
+            if(!isSelecting) return;
+            isSelecting = false;
+            
+            let selectedWord = selectedCells.map(c => c.innerText).join('');
+            let selectedWordRev = selectedWord.split('').reverse().join('');
+            
+            let foundWordMatch = null;
+            if(wsWords.includes(selectedWord)) foundWordMatch = selectedWord;
+            else if(wsWords.includes(selectedWordRev)) foundWordMatch = selectedWordRev;
+            
+            if(foundWordMatch) {
+                // Colorier les lettres en rouge (mot trouvé)
+                selectedCells.forEach(c => { c.classList.remove('highlight'); c.classList.add('found'); });
+                
+                // Mettre à jour la liste des mots à droite
+                let listItem = document.getElementById('ws-word-' + foundWordMatch);
+                if(listItem && !listItem.classList.contains('line-through')) {
+                    listItem.classList.add('line-through', 'text-green-600', 'opacity-50');
+                    listItem.querySelector('i').className = 'fas fa-check text-green-500 w-4 text-center';
+                    foundWordsCount++;
+                }
+
+                if(foundWordsCount === wsWords.length) {
+                    setTimeout(() => { 
+                        document.getElementById('ws-status').innerText = "BRAVO TOUT EST TROUVÉ ! 🎉"; 
+                        confetti(); 
+                    }, 500);
+                }
+            } else {
+                selectedCells.forEach(c => c.classList.remove('highlight'));
+            }
+            selectedCells = [];
+        }
+
+        /* 4. QUI DE NOUS DEUX */
+        const quizData = [
+            { q: "Qui de nous deux s'endort toujours en premier devant une série ?", a: "Maxence" },
+            { q: "Qui de nous deux est le plus gourmand ?", a: "Naomi" },
+            { q: "Qui de nous deux râle le plus le matin ?", a: "Naomi" },
+            { q: "Qui de nous deux passe le plus de temps sur son téléphone (ou l'iPad) ?", a: "Naomi" },
+            { q: "Qui de nous deux est le plus têtu ?", a: "Maxence" },
+            { q: "Qui de nous deux a fait le premier pas ?", a: "Maxence" },
+            { q: "Qui de nous deux prend le plus de temps pour se préparer avant de sortir ?", a: "Naomi" },
+            { q: "Qui de nous deux est le plus bordélique ?", a: "Maxence" },
+            { q: "Qui de nous veut un PEPE CHICKEN TOUT LES JOURS?", a: "Naomi" },
+            { q: "Princesse préfère qui ?", a: "Maxence" }
+        ];
+        let currentQ = 0;
+
+        function initQuiz() {
+            currentQ = 0;
+            document.getElementById('quiz-content').classList.remove('hidden');
+            document.getElementById('quiz-end').classList.add('hidden');
+            showQuestion();
+        }
+        function showQuestion() {
+            document.getElementById('quiz-question').innerText = quizData[currentQ].q;
+            document.getElementById('quiz-feedback').innerText = "";
+            document.getElementById('quiz-feedback').className = "mt-8 text-xl font-bold h-8";
+        }
+        window.checkQuizAnswer = function(answer) {
+            const feedback = document.getElementById('quiz-feedback');
+            if(answer === quizData[currentQ].a) {
+                feedback.innerText = "Vrai ! ✅";
+                feedback.classList.add('text-green-500');
+                setTimeout(() => {
+                    currentQ++;
+                    if(currentQ < quizData.length) showQuestion();
+                    else {
+                        document.getElementById('quiz-content').classList.add('hidden');
+                        document.getElementById('quiz-end').classList.remove('hidden');
+                        confetti();
+                    }
+                }, 800);
+            } else {
+                feedback.innerText = "Menteuse ! ❌";
+                feedback.classList.add('text-red-500');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderClues();
+            initPuzzle();
+            initMemory();
+            initWordSearch();
+            initQuiz();
+        });
+
+    </script>
+</body>
+</html>
